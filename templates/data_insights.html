@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Insights Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --accent-color: #4895ef;
+        --text-color: #333;
+        --light-bg: #f8f9fa;
+        --bg-color: #f0f2f5;
+        --card-bg: white;
+        --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dark Mode Theme */
+        :root.dark-theme {
+            --primary-color: #5566ff;
+            --secondary-color: #4e46e8;
+            --accent-color: #58a5ff;
+            --text-color: #e1e1e1;
+            --light-bg: #2a2a2a;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Apply CSS variables to elements */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            box-shadow: var(--card-shadow);
+        }
+
+        .upload-section {
+            background-color: var(--card-bg);
+        }
+
+        .stat-box {
+            background-color: var(--light-bg);
+        }
+
+        .file-input-label {
+            background-color: var(--light-bg);
+            border-color: var(--accent-color);
+        }
+
+        table {
+            border-color: var(--light-bg);
+        }
+
+        th, td {
+            border-color: var(--light-bg);
+        }
+
+        th {
+            background-color: var(--light-bg);
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-bg);
+        }
+
+        /* Theme toggle button */
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .theme-switch {
+            display: inline-block;
+            height: 24px;
+            position: relative;
+            width: 50px;
+        }
+
+        .theme-switch input {
+            display: none;
+        }
+
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            background-color: white;
+            bottom: 4px;
+            content: "";
+            height: 16px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 16px;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .slider-icons {
+            color: white;
+            position: absolute;
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            padding: 0 4px;
+            box-sizing: border-box;
+        }
+
+        .slider-icons span {
+            height: 24px;
+            line-height: 24px;
+            width: 18px;
+            text-align: center;
+        }
+        .navbar {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar h1 svg {
+            margin-right: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 20px;
+        }
+        
+        .upload-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+        }
+        
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            border: 2px dashed #ced4da;
+            width: 300px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input-label:hover {
+            background-color: #dee2e6;
+            border-color: var(--accent-color);
+        }
+        
+        .file-input-label svg {
+            margin-bottom: 10px;
+            color: #6c757d;
+        }
+        
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .upload-btn {
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            background-color: var(--secondary-color);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+        
+        .card-header .icon {
+            color: var(--accent-color);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        th, td {
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: var(--light-bg);
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .badge-numeric {
+            background-color: #e9f5ff;
+            color: #0077cc;
+        }
+        
+        .badge-string {
+            background-color: #f5f0ff;
+            color: #7209b7;
+        }
+        
+        .badge-date {
+            background-color: #e9fff0;
+            color: #00a86b;
+        }
+        
+        .badge-boolean {
+            background-color: #fff5e9;
+            color: #ff7700;
+        }
+        
+        .missing-value-cell {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-box {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+       
+
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            Data Insights Dashboard
+        </h1>
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="checkbox">
+                <div class="slider-icons">
+                    <span>🌙</span>
+                    <span>☀️</span>
+                </div>
+                <input type="checkbox" id="checkbox" />
+                <div class="slider"></div>
+            </label>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="upload-section">
+            <h2>Upload Your Dataset</h2>
+            <p>Upload a CSV file to generate interactive visualizations and insights.</p>
+            
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="file-upload">
+                    <label for="file-input" class="file-input-label">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span id="file-name">Drag & drop or click to browse</span>
+                    </label>
+                    <input type="file" id="file-input" class="file-input" accept=".csv">
+                    <button type="button" id="upload-btn" class="upload-btn">Upload & Analyze</button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="results-container" class="hidden">
+            <h2 id="dataset-name">📊 Dataset Overview</h2>
+            
+            <div class="dashboard">
+                <!-- Dataset Summary Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Dataset Summary</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="3" y1="15" x2="21" y2="15"></line>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                                <line x1="15" y1="3" x2="15" y2="21"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label">Rows</div>
+                            <div id="row-count" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Columns</div>
+                            <div id="column-count" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Missing Values</div>
+                            <div id="missing-count" class="stat-value">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Data Size</div>
+                            <div id="data-size" class="stat-value">0 KB</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Missing Values Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Missing Values Analysis</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="missing-values-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Data Types Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Data Types</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                                <line x1="9" y1="20" x2="15" y2="20"></line>
+                                <line x1="12" y1="4" x2="12" y2="20"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="data-types-chart"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="data-types-table">
+                            <thead>
+                                <tr>
+                                    <th>Column</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-types-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Numeric Columns Distribution Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Numeric Distribution</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <select id="numeric-column-selector" class="column-selector">
+                            <option value="">Select a numeric column</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="numeric-distribution-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Statistical Summary Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Statistical Summary</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th id="stats-columns-header"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Categorical Data Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Categorical Values</h3>
+                        <div class="icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <select id="categorical-column-selector" class="column-selector">
+                            <option value="">Select a categorical column</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categorical-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 Data Insights Dashboard • Powered by Chart.js</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // File input handling
+            const fileInput = document.getElementById('file-input');
+            const fileNameDisplay = document.getElementById('file-name');
+            const uploadBtn = document.getElementById('upload-btn');
+            const resultsContainer = document.getElementById('results-container');
+            
+            // Charts references
+            let missingValuesChart;
+            let dataTypesChart;
+            let numericDistributionChart;
+            let categoricalChart;
+            
+            // Track the current data
+            let currentData = null;
+            let columns = [];
+            let dataTypes = {};
+            
+            // File input change handler
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    fileNameDisplay.textContent = file.name;
+                } else {
+                    fileNameDisplay.textContent = 'Drag & drop or click to browse';
+                }
+            });
+            
+            // Upload button click handler
+            uploadBtn.addEventListener('click', function() {
+                if (fileInput.files && fileInput.files[0]) {
+                    const file = fileInput.files[0];
+                    parseCSV(file);
+                } else {
+                    alert('Please select a CSV file first.');
+                }
+            });
+            
+            // Parse CSV function
+            function parseCSV(file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    complete: function(results) {
+                        currentData = results.data;
+                        
+                        // Check if the last row is empty and remove it
+                        if (currentData.length > 0) {
+                            const lastRow = currentData[currentData.length - 1];
+                            const isEmpty = Object.values(lastRow).every(val => val === null || val === "");
+                            if (isEmpty) {
+                                currentData.pop();
+                            }
+                        }
+                        
+                        // Display results
+                        document.getElementById('dataset-name').textContent = `📊 Dataset: ${file.name}`;
+                        analyzeData(currentData);
+                        resultsContainer.classList.remove('hidden');
+                    },
+                    error: function(error) {
+                        console.error('Error parsing CSV:', error);
+                        alert('Error parsing the CSV file. Please check the file format.');
+                    }
+                });
+            }
+            
+            // Analyze data function
+            function analyzeData(data) {
+                if (!data || data.length === 0) {
+                    alert('No data found in the CSV file.');
+                    return;
+                }
+                
+                // Get columns
+                columns = Object.keys(data[0]);
+                
+                // Basic stats
+                document.getElementById('row-count').textContent = data.length;
+                document.getElementById('column-count').textContent = columns.length;
+                
+                // Determine data size
+                const dataSize = estimateDataSize(data);
+                document.getElementById('data-size').textContent = formatBytes(dataSize);
+                
+                // Analyze data types and missing values
+                analyzeDataTypes(data);
+                analyzeMissingValues(data);
+                
+                // Setup charts
+                setupCharts(data);
+                
+                // Setup column selectors
+                setupColumnSelectors(data);
+                
+                // Initial chart displays
+                updateNumericDistributionChart(data);
+                updateCategoricalChart(data);
+            }
+            
+            // Analyze data types function
+            function analyzeDataTypes(data) {
+                dataTypes = {};
+                
+                columns.forEach(column => {
+                    const values = data.map(row => row[column]).filter(val => val !== null && val !== undefined && val !== "");
+                    
+                    if (values.length === 0) {
+                        dataTypes[column] = 'unknown';
+                    } else {
+                        // Check various data types
+                        const isNumeric = values.every(val => typeof val === 'number' || !isNaN(parseFloat(val)));
+                        const isDate = values.every(val => !isNaN(Date.parse(val)));
+                        const isBoolean = values.every(val => val === true || val === false || val === 'true' || val === 'false');
+                        
+                        if (isNumeric) {
+                            dataTypes[column] = 'numeric';
+                        } else if (isDate) {
+                            dataTypes[column] = 'date';
+                        } else if (isBoolean) {
+                            dataTypes[column] = 'boolean';
+                        } else {
+                            dataTypes[column] = 'string';
+                        }
+                    }
+                });
+                
+                // Update the data types table
+                const tbody = document.getElementById('data-types-body');
+                tbody.innerHTML = '';
+                
+                columns.forEach(column => {
+                    const row = document.createElement('tr');
+                    
+                    const colCell = document.createElement('td');
+                    colCell.textContent = column;
+                    
+                    const typeCell = document.createElement('td');
+                    const badge = document.createElement('span');
+                    badge.textContent = dataTypes[column];
+                    badge.classList.add('badge');
+                    
+                    switch (dataTypes[column]) {
+                        case 'numeric':
+                            badge.classList.add('badge-numeric');
+                            break;
+                        case 'string':
+                            badge.classList.add('badge-string');
+                            break;
+                        case 'date':
+                            badge.classList.add('badge-date');
+                            break;
+                        case 'boolean':
+                            badge.classList.add('badge-boolean');
+                            break;
+                    }
+                    
+                    typeCell.appendChild(badge);
+                    
+                    row.appendChild(colCell);
+                    row.appendChild(typeCell);
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Analyze missing values function
+            function analyzeMissingValues(data) {
+                const missingValues = {};
+                let totalMissing = 0;
+                
+                columns.forEach(column => {
+                    const missing = data.filter(row => row[column] === null || row[column] === undefined || row[column] === "").length;
+                    missingValues[column] = missing;
+                    totalMissing += missing;
+                });
+                
+                document.getElementById('missing-count').textContent = totalMissing;
+                
+                return missingValues;
+            }
+            
+            // Setup charts function
+            function setupCharts(data) {
+                // Get missing values
+                const missingValues = analyzeMissingValues(data);
+                
+                // Setup Missing Values Chart
+                setupMissingValuesChart(missingValues);
+                
+                // Setup Data Types Chart
+                setupDataTypesChart();
+                
+                // Setup Statistical Summary
+                setupStatisticalSummary(data);
+            }
+            
+            // Setup Missing Values Chart
+            function setupMissingValuesChart(missingValues) {
+                const ctx = document.getElementById('missing-values-chart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (missingValuesChart) {
+                    missingValuesChart.destroy();
+                }
+                
+                // Get columns with missing values
+                const columnNames = Object.keys(missingValues);
+                const missingCounts = Object.values(missingValues);
+                
+                missingValuesChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: columnNames,
+                        datasets: [{
+                            label: 'Missing Values Count',
+                            data: missingCounts,
+                            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Missing Values by Column'
+                            },
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = currentData.length;
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `Missing: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Count'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Setup Data Types Chart
+            function setupDataTypesChart() {
+                const ctx = document.getElementById('data-types-chart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (dataTypesChart) {
+                    dataTypesChart.destroy();
+                }
+                
+                // Count data types
+                const typeCounts = {
+                    numeric: 0,
+                    string: 0,
+                    date: 0,
+                    boolean: 0,
+                    unknown: 0
+                };
+                
+                for (const type of Object.values(dataTypes)) {
+                    typeCounts[type]++;
+                }
+                
+                const labels = Object.keys(typeCounts);
+                const counts = Object.values(typeCounts);
+                
+                const backgroundColors = [
+                    'rgba(0, 119, 204, 0.7)',
+                    'rgba(114, 9, 183, 0.7)',
+                    'rgba(0, 168, 107, 0.7)',
+                    'rgba(255, 119, 0, 0.7)',
+                    'rgba(150, 150, 150, 0.7)'
+                ];
+                
+                dataTypesChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map(function(label, i) {
+                                                const meta = chart.getDatasetMeta(0);
+                                                const ds = data.datasets[0];
+                                                const arc = meta.data[i];
+                                                
+                                                return {
+                                                    text: `${label} (${ds.data[i]})`,
+                                                    fillStyle: ds.backgroundColor[i],
+                                                    strokeStyle: ds.borderColor[i],
+                                                    lineWidth: 1,
+                                                    hidden: isNaN(ds.data[i]) || meta.data[i].hidden,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = counts.reduce((acc, val) => acc + val, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Setup Statistical Summary
+            function setupStatisticalSummary(data) {
+                // Get numeric columns
+                const numericColumns = columns.filter(col => dataTypes[col] === 'numeric');
+                
+                if (numericColumns.length === 0) {
+                    document.getElementById('stats-table').parentNode.innerHTML = '<p>No numeric columns found for statistical analysis.</p>';
+                    return;
+                }
+                
+                const statsData = calculateStats(data, numericColumns);
+                
+                // Update the table header
+                const headerRow = document.getElementById('stats-columns-header');
+                headerRow.innerHTML = '';
+                
+                numericColumns.forEach(col => {
+                    const th = document.createElement('th');
+                    th.textContent = col;
+                    headerRow.appendChild(th);
+                });
+                
+                // Update the table body
+                const tbody = document.getElementById('stats-body');
+                tbody.innerHTML = '';
+                
+                const metrics = ['count', 'mean', 'median', 'min', 'max', 'std', 'q1', 'q3'];
+                const metricLabels = {
+                    'count': 'Count',
+                    'mean': 'Mean',
+                    'median': 'Median',
+                    'min': 'Minimum',
+                    'max': 'Maximum',
+                    'std': 'Std Dev',
+                    'q1': '25% (Q1)',
+                    'q3': '75% (Q3)'
+                };
+                
+                metrics.forEach(metric => {
+                    const row = document.createElement('tr');
+                    
+                    const metricCell = document.createElement('td');
+                    metricCell.textContent = metricLabels[metric];
+                    row.appendChild(metricCell);
+                    
+                    numericColumns.forEach(col => {
+                        const valueCell = document.createElement('td');
+                        valueCell.textContent = formatNumber(statsData[col][metric]);
+                        row.appendChild(valueCell);
+                    });
+                    
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Calculate statistical measures
+            function calculateStats(data, columns) {
+                const stats = {};
+                
+                columns.forEach(col => {
+                    // Get numeric values (filter out null/undefined/empty)
+                    const values = data
+                        .map(row => row[col])
+                        .filter(val => val !== null && val !== undefined && val !== "")
+                        .map(val => typeof val === 'number' ? val : parseFloat(val))
+                        .filter(val => !isNaN(val))
+                        .sort((a, b) => a - b);
+                    
+                    const count = values.length;
+                    
+                    if (count === 0) {
+                        stats[col] = {
+                            count: 0,
+                            mean: NaN,
+                            median: NaN,
+                            min: NaN,
+                            max: NaN,
+                            std: NaN,
+                            q1: NaN,
+                            q3: NaN
+                        };
+                        return;
+                    }
+                    
+                    // Calculate statistics
+                    const sum = values.reduce((acc, val) => acc + val, 0);
+                    const mean = sum / count;
+                    const min = values[0];
+                    const max = values[count - 1];
+                    
+                    // Calculate median
+                    const mid = Math.floor(count / 2);
+                    const median = count % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
+                    
+                    // Calculate quartiles
+                    const q1Index = Math.floor(count * 0.25);
+                    const q3Index = Math.floor(count * 0.75);
+                    const q1 = values[q1Index];
+                    const q3 = values[q3Index];
+                    
+                    // Calculate standard deviation
+                    const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+                    const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / count;
+                    const std = Math.sqrt(variance);
+                    
+                    stats[col] = {
+                        count,
+                        mean,
+                        median,
+                        min,
+                        max,
+                        std,
+                        q1,
+                        q3
+                    };
+                });
+                
+                return stats;
+            }
+            
+            // Setup column selectors
+            function setupColumnSelectors(data) {
+                const numericSelector = document.getElementById('numeric-column-selector');
+                const categoricalSelector = document.getElementById('categorical-column-selector');
+                
+                // Clear existing options
+                numericSelector.innerHTML = '<option value="">Select a numeric column</option>';
+                categoricalSelector.innerHTML = '<option value="">Select a categorical column</option>';
+                
+                // Add options for numeric columns
+                columns.filter(col => dataTypes[col] === 'numeric').forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    numericSelector.appendChild(option);
+                });
+                
+                // Add options for categorical columns
+                columns.filter(col => dataTypes[col] === 'string' || dataTypes[col] === 'boolean').forEach(col => {
+                    const option = document.createElement('option');
+                    option.value = col;
+                    option.textContent = col;
+                    categoricalSelector.appendChild(option);
+                });
+                
+                // Add event listeners
+                numericSelector.addEventListener('change', function() {
+                    updateNumericDistributionChart(data);
+                });
+                
+                categoricalSelector.addEventListener('change', function() {
+                    updateCategoricalChart(data);
+                });
+            }
+            
+            // Update numeric distribution chart
+            function updateNumericDistributionChart(data) {
+                const ctx = document.getElementById('numeric-distribution-chart').getContext('2d');
+                const selector = document.getElementById('numeric-column-selector');
+                const selectedColumn = selector.value;
+                
+                // Destroy existing chart if it exists
+                if (numericDistributionChart) {
+                    numericDistributionChart.destroy();
+                }
+                
+                if (!selectedColumn) {
+                    // No column selected, show first numeric column if available
+                    const numericColumns = columns.filter(col => dataTypes[col] === 'numeric');
+                    if (numericColumns.length > 0) {
+                        selector.value = numericColumns[0];
+                        updateNumericDistributionChart(data);
+                    }
+                    return;
+                }
+                
+                // Get values for the selected column
+                const values = data
+                    .map(row => row[selectedColumn])
+                    .filter(val => val !== null && val !== undefined && val !== "")
+                    .map(val => typeof val === 'number' ? val : parseFloat(val))
+                    .filter(val => !isNaN(val));
+                
+                if (values.length === 0) {
+                    return;
+                }
+                
+                // Create histogram data
+                const min = Math.min(...values);
+                const max = Math.max(...values);
+                const range = max - min;
+                const binCount = Math.min(20, Math.ceil(Math.sqrt(values.length)));
+                const binWidth = range / binCount;
+                
+                const bins = Array(binCount).fill(0);
+                const binLabels = [];
+                
+                for (let i = 0; i < binCount; i++) {
+                    const binStart = min + i * binWidth;
+                    const binEnd = binStart + binWidth;
+                    binLabels.push(`${formatNumber(binStart)} - ${formatNumber(binEnd)}`);
+                }
+                
+                values.forEach(val => {
+                    if (val === max) {
+                        // Handle the edge case where the value is exactly the maximum
+                        bins[binCount - 1]++;
+                    } else {
+                        const binIndex = Math.floor((val - min) / binWidth);
+                        bins[binIndex]++;
+                    }
+                });
+                
+                // Create the chart
+                numericDistributionChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: binLabels,
+                        datasets: [{
+                            label: `Distribution of ${selectedColumn}`,
+                            data: bins,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Distribution of ${selectedColumn}`
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Frequency'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Update categorical chart
+            function updateCategoricalChart(data) {
+                const ctx = document.getElementById('categorical-chart').getContext('2d');
+                const selector = document.getElementById('categorical-column-selector');
+                const selectedColumn = selector.value;
+                
+                // Destroy existing chart if it exists
+                if (categoricalChart) {
+                    categoricalChart.destroy();
+                }
+                
+                if (!selectedColumn) {
+                    // No column selected, show first categorical column if available
+                    const categoricalColumns = columns.filter(col => dataTypes[col] === 'string' || dataTypes[col] === 'boolean');
+                    if (categoricalColumns.length > 0) {
+                        selector.value = categoricalColumns[0];
+                        updateCategoricalChart(data);
+                    }
+                    return;
+                }
+                
+                // Count occurrences of each value
+                const valueCounts = {};
+                
+                data.forEach(row => {
+                    const value = row[selectedColumn];
+                    
+                    if (value !== null && value !== undefined && value !== "") {
+                        const valueStr = value.toString();
+                        valueCounts[valueStr] = (valueCounts[valueStr] || 0) + 1;
+                    }
+                });
+                
+                // Sort by count (descending)
+                const sortedEntries = Object.entries(valueCounts).sort((a, b) => b[1] - a[1]);
+                
+                // Limit to top N categories to avoid overcrowding
+                const MAX_CATEGORIES = 15;
+                let chartEntries = sortedEntries;
+                let otherCount = 0;
+                
+                if (sortedEntries.length > MAX_CATEGORIES) {
+                    chartEntries = sortedEntries.slice(0, MAX_CATEGORIES);
+                    otherCount = sortedEntries.slice(MAX_CATEGORIES).reduce((sum, entry) => sum + entry[1], 0);
+                    
+                    if (otherCount > 0) {
+                        chartEntries.push(['Other', otherCount]);
+                    }
+                }
+                
+                const labels = chartEntries.map(entry => entry[0]);
+                const counts = chartEntries.map(entry => entry[1]);
+                
+                // Generate colors
+                const backgroundColors = [];
+                const borderColors = [];
+                
+                for (let i = 0; i < chartEntries.length; i++) {
+                    const hue = (i * 137.5) % 360; // Use golden angle for color distribution
+                    backgroundColors.push(`hsla(${hue}, 70%, 60%, 0.7)`);
+                    borderColors.push(`hsla(${hue}, 70%, 60%, 1)`);
+                }
+                
+                // Create the chart
+                categoricalChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Distribution of ${selectedColumn}`
+                            },
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map(function(label, i) {
+                                                const meta = chart.getDatasetMeta(0);
+                                                const ds = data.datasets[0];
+                                                const arc = meta.data[i];
+                                                
+                                                return {
+                                                    text: label.length > 15 ? label.substring(0, 15) + '...' : label,
+                                                    fillStyle: ds.backgroundColor[i],
+                                                    strokeStyle: ds.borderColor[i],
+                                                    lineWidth: 1,
+                                                    hidden: isNaN(ds.data[i]) || meta.data[i].hidden,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = counts.reduce((acc, val) => acc + val, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Helper function to estimate data size
+            function estimateDataSize(data) {
+                // Convert to JSON and measure length
+                const jsonString = JSON.stringify(data);
+                return jsonString.length;
+            }
+            
+            // Helper function to format bytes
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Helper function to format number
+            function formatNumber(num) {
+                if (num === undefined || num === null || isNaN(num)) {
+                    return 'N/A';
+                }
+                
+                // Check if the number is an integer
+                if (Number.isInteger(num)) {
+                    return num.toString();
+                }
+                
+                // For floating point, limit to 2 decimal places
+                return num.toFixed(2);
+            }
+            
+        });
+
+    </script>
+</body>
+</html>
